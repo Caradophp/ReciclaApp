@@ -7,8 +7,15 @@ function UserView() {
     const { usuario, solicitacoes, adicionarSolicitacao, logout } = useApp();
     const [showModal, setShowModal] = useState(false);
 
-    function handleNovaSolicitacao(event: GestureResponderEvent): void {
-        throw new Error('Function not implemented.');
+    function handleNovaSolicitacao() {
+      const nova = {
+        id: Date.now(),
+        usuario: usuario?.nome,
+        endereco: 'Rua das Palmeiras, 123',
+        status: 'pendente',
+      };
+      adicionarSolicitacao(nova);
+      setShowModal(false);
     }
 
     return (
