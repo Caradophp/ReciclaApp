@@ -1,31 +1,40 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList } from 'react-native';
 import { useApp } from '../../context/AppContext';
+import CollectorRegistrationScreen from '../cadastro/CadastroColetorScreen';
+import api from '../../utils/api';
 
 function ColetorView() {
   const { usuario, solicitacoes, adicionarSolicitacao, logout } = useApp();
 
+  const [listaSolicitacoes, setListaSolicitacoes] = useState([]);
+  const [telaCadastro, setTelaCadastro] = useState(false); // 🔥 controla qual tela aparece
+
   useEffect(() => {
-    if (solicitacoes.length === 0) {
-      const novaSolicitacao = {
-        id: Date.now(),
-        usuario: usuario?.nome || 'Desconhecido',
-        endereco: 'Rua das Palmeiras, 123',
-        status: 'pendente',
-      };
-      adicionarSolicitacao(novaSolicitacao);
-    }
+    carregarSolicitacoes();
   }, []);
 
-  function mudarStatus(id: number, novoStatus: string) {
-    const solicitacao = solicitacoes.find((s: { id: number }) => s.id === id);
-    if (solicitacao) {
-      const solicitacaoAtualizada = { ...solicitacao, status: novoStatus };
-      // Supondo que exista um método para atualizar a solicitação no contexto:
-      if (typeof adicionarSolicitacao === 'function') {
-        adicionarSolicitacao(solicitacaoAtualizada);
-      }
+  async function carregarSolicitacoes() {
+    try {
+      const response = await api.get(`/solicitacoes/todas`);
+      setListaSolicitacoes(response.data);
+    } catch (error) {
+      console.error("Erro ao buscar solicitações:", error);
     }
+  }
+
+  async function mudarStatus(id) {
+    await api.patch(`solicitacoes/atualizar-status/${id}`);
+    carregarSolicitacoes();
+  }
+
+  // 🔥 Se telaCadastro for true, renderiza o cadastro e sai daqui
+  if (telaCadastro) {
+    return (
+      <CollectorRegistrationScreen
+        onVoltar={() => setTelaCadastro(false)} // botão para voltar
+      />
+    );
   }
 
   return (
@@ -34,18 +43,40 @@ function ColetorView() {
       <Text style={styles.subtitle}>Veja as solicitações abaixo:</Text>
 
       <FlatList
-        data={solicitacoes}
-        keyExtractor={(item) => item.id.toString()}
+        data={listaSolicitacoes}
+        keyExtractor={(item, index) => index.toString()}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <Text style={styles.itemText}>📍 {item.endereco}</Text>
+            <Text style={styles.itemText}>
+              {item.rua}, Nº {item.numero} - {item.bairro}
+            </Text>
             <Text style={styles.status}>Status: {item.status}</Text>
-            <TouchableOpacity style={styles.button} onPress={mudarStatus.bind(null, solicitacoes[0]?.id, 'coletado')}>
-              <Text style={styles.buttonText}>Coletado</Text>
-            </TouchableOpacity>
+
+            {item.status !== 'CONCLUIDA' && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => mudarStatus(Number(item.id))}
+              >
+                <Text style={styles.buttonText}>
+                  {item.status === 'ANDAMENTO' ? 'Concluído' : 'Andamento'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
+        ListEmptyComponent={
+          <Text style={{ textAlign: 'center', marginTop: 20, color: '#555' }}>
+            Nenhuma solicitação encontrada
+          </Text>
+        }
       />
+
+      <TouchableOpacity
+        style={styles.button}
+        onPress={() => setTelaCadastro(true)} // 🔥 troca de tela aqui
+      >
+        <Text style={styles.buttonText}>Cadastrar coletor</Text>
+      </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={logout}>
         <Text style={styles.buttonText}>Sair</Text>
@@ -81,6 +112,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     alignSelf: 'center',
+    marginTop: 10,
   },
   buttonText: {
     color: '#fff',

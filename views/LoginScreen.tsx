@@ -19,13 +19,13 @@ function LoginScreen() {
     return <HomeScreen />;
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!email || !senha) {
       Alert.alert("Erro", "Preencha todos os campos!");
       return;
     }
 
-    const sucesso = login(email, senha);
+    const sucesso = await login(email, senha);
 
     if (!sucesso) {
       Alert.alert("Erro", "Usuário ou senha inválidos!");
@@ -34,65 +34,84 @@ function LoginScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Recicla App ♻️</Text>
+      <View style={styles.card}>
+        <Text style={styles.title}>Recicla App ♻️</Text>
 
-      <TextInput
-        style={styles.input}
-        placeholder="E-mail"
-        placeholderTextColor="#777"
-        value={email}
-        onChangeText={setEmail}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="E-mail"
+          placeholderTextColor="#88A7A5"
+          value={email}
+          onChangeText={setEmail}
+        />
 
-      <TextInput
-        style={styles.input}
-        placeholder="Senha"
-        placeholderTextColor="#777"
-        secureTextEntry
-        value={senha}
-        onChangeText={setSenha}
-      />
+        <TextInput
+          style={styles.input}
+          placeholder="Senha"
+          placeholderTextColor="#88A7A5"
+          secureTextEntry
+          value={senha}
+          onChangeText={setSenha}
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin}>
-        <Text style={styles.buttonText}>Entrar</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button} onPress={handleLogin}>
+          <Text style={styles.buttonText}>Entrar</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
 
 export default LoginScreen;
 
+
 const styles = StyleSheet.create({
-  container: {
+    container: {
     flex: 1,
+    backgroundColor: "#C8E6C9",
     justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "#E0F2F1",
-    paddingHorizontal: 20,
+    padding: 20,
   },
+
+  card: {
+    backgroundColor: "#FFFFFF",
+    width: "100%",
+    borderRadius: 16,
+    padding: 30,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+
   title: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "bold",
-    marginBottom: 40,
-    color: "#00796B",
+    color: "#2E7D32",
+    textAlign: "center",
+    marginBottom: 30,
   },
+
   input: {
     width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 8,
-    padding: 12,
+    backgroundColor: "#F1F8E9",
+    borderRadius: 10,
+    padding: 14,
     fontSize: 16,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#B2DFDB",
+    borderColor: "#C5E1A5",
   },
+
   button: {
-    backgroundColor: "#00796B",
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 8,
+    backgroundColor: "#2E7D32",
+    paddingVertical: 14,
+    borderRadius: 10,
+    alignItems: "center",
     marginTop: 10,
   },
+
   buttonText: {
     color: "#FFFFFF",
     fontSize: 18,

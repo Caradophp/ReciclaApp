@@ -1,71 +1,106 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, GestureResponderEvent } from 'react-native';
-
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Modal, GestureResponderEvent, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useApp } from '../../context/AppContext';
+import api from '../../utils/api';
 
 function UserView() {
-    const { usuario, solicitacoes, adicionarSolicitacao, logout } = useApp();
+    const { usuario, solicitacoes, adicionarSolicitacao, recuperaIdUsuarioLogado, logout } = useApp();
     const [showModal, setShowModal] = useState(false);
+    const [qtd, setQtd] = useState("");
 
-    function handleNovaSolicitacao() {
+    const [listaSolicitacoes, setListaSolicitacoes] = useState([]);
+
+    useEffect(() => {
+      carregarSolicitacoes();
+    }, []);
+
+    async function carregarSolicitacoes() {
+        try {
+          const idUsuario = await AsyncStorage.getItem("iduser");
+          const response = await api.get(`/solicitacoes/${idUsuario}`);
+          setListaSolicitacoes(response.data); // ✅ agora sim
+        } catch (error) {
+          console.error("Erro ao buscar solicitações:", error);
+        }
+      }
+
+    async function handleNovaSolicitacao() {
+
       const nova = {
-        id: Date.now(),
-        usuario: usuario?.nome,
-        endereco: 'Rua das Palmeiras, 123',
-        status: 'pendente',
+        quantidadeEmQuilos: qtd,
+        status: 'PENDENTE',
+        idUsuario: await AsyncStorage.getItem("iduser")
       };
-      adicionarSolicitacao(nova);
-      setShowModal(false);
+
+      try {
+        await adicionarSolicitacao(nova);
+        setShowModal(false);
+        carregarSolicitacoes();
+      } catch (err) {
+        console.error("Erro ao criar solicitação:", err);
+      }
     }
 
     return (
-        <View style={styles.container}>
-          <Text style={styles.title}>Olá, {usuario?.nome ?? 'Usuário'} 👋</Text>
-          <Text style={styles.subtitle}>
-            Solicite a coleta dos seus recicláveis abaixo:
+    <View style={styles.container}>
+      <Text style={styles.title}>Olá, {usuario?.nome ?? 'Usuário'} 👋</Text>
+      <Text style={styles.subtitle}>
+        Solicite a coleta dos seus recicláveis abaixo:
+      </Text>
+
+      <TouchableOpacity style={styles.button} onPress={() => setShowModal(true)}>
+        <Text style={styles.buttonText}>♻️ Solicitar Coleta</Text>
+      </TouchableOpacity>
+
+      <Text style={[styles.subtitle, { marginTop: 20 }]}>
+        Minhas Solicitações:
+      </Text>
+
+      {/* 🔥 Aqui é onde a lista é exibida */}
+      <FlatList
+        data={listaSolicitacoes}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.card}>
+            <Text style={styles.itemText}>
+              {item.rua}, Nº {item.numero} - {item.bairro}
+            </Text>
+            <Text style={styles.status}>Status: {item.status} - Data: {item.data}</Text>
+          </View>
+        )}
+        ListEmptyComponent={
+          <Text style={{ textAlign: 'center', marginTop: 20, color: '#555' }}>
+            Nenhuma solicitação encontrada
           </Text>
-    
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => setShowModal(true)}
-          >
-            <Text style={styles.buttonText}>♻️ Solicitar Coleta</Text>
-          </TouchableOpacity>
-    
-          <Text style={[styles.subtitle, { marginTop: 20 }]}>
-            Minhas Solicitações:
-          </Text>
-    
-          <FlatList
-            data={solicitacoes}
-            keyExtractor={(item) => item.id.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <Text style={styles.itemText}>{item.endereco}</Text>
-                <Text style={styles.status}>Status: {item.status}</Text>
-              </View>
-            )}
-          />
-    
-          <Modal visible={showModal} transparent animationType="slide">
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalText}>Confirmar nova solicitação?</Text>
-                <TouchableOpacity style={styles.modalButton} onPress={handleNovaSolicitacao}>
-                  <Text style={styles.modalButtonText}>Confirmar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={() => setShowModal(false)}>
-                  <Text style={styles.cancelText}>Cancelar</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </Modal>
-    
-          <TouchableOpacity style={styles.button} onPress={logout}>
-            <Text style={styles.buttonText}>Sair</Text>
-          </TouchableOpacity>
+        }
+      />
+
+      <Modal visible={showModal} transparent animationType="slide">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text>Digite a quantidade em quilos</Text>
+            <TextInput
+              style={styles.input}
+              placeholder='Quantidade em quilos'
+              value={qtd}
+              onChangeText={setQtd}
+            />
+            <TouchableOpacity style={styles.modalButton} onPress={handleNovaSolicitacao}>
+              <Text style={styles.modalButtonText}>Confirmar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowModal(false)}>
+              <Text style={styles.cancelText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-    );
+      </Modal>
+
+      <TouchableOpacity style={styles.button} onPress={logout}>
+        <Text style={styles.buttonText}>Sair</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 export default UserView;
@@ -147,5 +182,15 @@ const styles = StyleSheet.create({
   cancelText: {
     marginTop: 10,
     color: '#555',
+  },
+  input: {
+    width: "100%",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: "#B2DFDB",
   },
 });

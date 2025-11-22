@@ -28,7 +28,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (usuario.tipo === 'coletor') {
+  if (usuario.tipo === 'COLETOR') {
     return ColetorView();
   }
 
